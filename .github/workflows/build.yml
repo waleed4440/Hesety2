@@ -8,10 +8,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Unzip project and find root
+        with:
+          fetch-depth: 0
+      - name: Unzip newest project zip and find root
         run: |
+          BEST=""; BT=0
+          for f in *.zip; do
+            t=$(git log -1 --format=%ct -- "$f")
+            if [ "$t" -ge "$BT" ]; then BT=$t; BEST="$f"; fi
+          done
+          if [ -z "$BEST" ]; then echo "No zip file found"; ls -la; exit 1; fi
+          echo "Using zip: $BEST"
           mkdir app_src
-          unzip -q project.zip -d app_src
+          unzip -q "$BEST" -d app_src
           SETTINGS=$(find app_src -name settings.gradle.kts | head -1)
           if [ -z "$SETTINGS" ]; then echo "settings.gradle.kts not found"; find app_src | head -50; exit 1; fi
           ROOT=$(dirname "$SETTINGS")
